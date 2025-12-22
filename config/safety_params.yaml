@@ -1,0 +1,33 @@
+# Safety Filter Parameters
+safety:
+  # Predictive safety filter
+  filter:
+    enabled: true
+    horizon: 10  # safety horizon
+    dt: 0.1  # time step
+  
+  # Tube MPC settings
+  tube:
+    enabled: true
+    tube_type: "rigid"  # "rigid", "elastic"
+    tube_scaling: 1.0
+  
+  # Backup controller (LQR)
+  backup:
+    enabled: true
+    type: "lqr"
+    Q: [100.0, 100.0, 100.0, 10.0, 10.0, 10.0, 50.0, 50.0, 50.0, 5.0, 5.0, 5.0]  # state weights
+    R: [0.1, 0.01, 0.01, 0.01]  # control weights (thrust, gimbal)
+  
+  # Robust Positively Invariant (RPI) set
+  rpi:
+    enabled: true
+    computation_method: "lyapunov"  # "lyapunov", "sampling"
+    alpha: 0.1  # contraction rate
+  
+  # Safety constraints
+  constraints:
+    position_safe_zone: [[-500.0, 500.0], [-500.0, 500.0], [0.0, 5000.0]]  # [x_min, x_max], ...
+    velocity_safe_max: 200.0  # m/s
+    attitude_safe_max: 0.3491  # rad (20 deg from vertical)
+

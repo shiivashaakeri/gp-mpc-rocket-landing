@@ -1,0 +1,36 @@
+# Rocket Vehicle Parameters
+vehicle:
+  name: "Falcon-9-like"
+  
+  # Mass properties
+  mass:
+    dry_mass: 22200.0  # kg
+    propellant_mass: 411000.0  # kg
+    initial_mass: 433200.0  # kg
+  
+  # Inertia tensor (kg*m^2) - principal axes
+  inertia:
+    Ixx: 1.0e6
+    Iyy: 1.0e6
+    Izz: 1.0e5
+  
+  # Engine parameters
+  engine:
+    isp: 282.0  # seconds (sea level)
+    isp_vacuum: 311.0  # seconds
+    max_thrust: 845000.0  # N (single engine)
+    min_thrust: 0.0  # N
+    gimbal_max_angle: 0.1745  # radians (10 degrees)
+    num_engines: 1
+  
+  # Geometry
+  geometry:
+    length: 47.0  # m
+    diameter: 3.7  # m
+    center_of_mass_offset: [0.0, 0.0, -1.0]  # m (from base)
+  
+  # Aerodynamics (simplified)
+  aerodynamics:
+    drag_coefficient: 0.3
+    reference_area: 10.75  # m^2
+
