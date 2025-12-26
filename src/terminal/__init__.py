@@ -46,6 +46,12 @@ from .local_safe_set import (
     LocalSafeSetConfig,
     MultiResolutionLocalSafeSet,
 )
+from .memory_safe_set import (
+    CompactTrajectory,
+    MemoryOptimizedConfig,
+    MemoryOptimizedSafeSet,
+    StreamingSafeSet,
+)
 from .q_function import (
     GPQFunction,
     InverseDistanceQFunction,
@@ -70,6 +76,7 @@ except ImportError:
     HAS_CASADI = False
 
 __all__ = [
+    "CompactTrajectory",
     # Convex Hull
     "ConvexHullConfig",
     "ConvexHullConstraint",
@@ -81,12 +88,16 @@ __all__ = [
     "LocalSafeSet",
     # Local Safe Set
     "LocalSafeSetConfig",
+    # Memory Safe Set
+    "MemoryOptimizedConfig",
+    "MemoryOptimizedSafeSet",
     "MultiResolutionLocalSafeSet",
     "QFunctionApproximator",
     # Q-Function
     "QFunctionConfig",
     "QFunctionManager",
     "SampledSafeSet",
+    "StreamingSafeSet",
     "TerminalSetManager",
     # Safe Set
     "TrajectoryData",

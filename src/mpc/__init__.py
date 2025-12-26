@@ -55,6 +55,12 @@ from .nominal_mpc import (
     NominalMPC,
     NominalMPC3DoF,
 )
+from .osqp_rti import (
+    OSQPRTIMPC,
+    FastRTI3DoF,
+    OSQPRTIConfig,
+    OSQPRTISolution,
+)
 from .rti_mpc import (
     RTI_MPC,
     RTIConfig,
@@ -70,6 +76,7 @@ from .uncertainty_prop import (
 
 __all__ = [
     "GPMPC",
+    "OSQPRTIMPC",
     "RTI_MPC",
     "CasADiConstraints",
     "CasADiCostFunction",
@@ -78,6 +85,8 @@ __all__ = [
     "ConstraintTightening",
     # Cost Functions
     "CostWeights",
+    # OSQP RTI-MPC
+    "FastRTI3DoF",
     # GP-MPC
     "GPMPCConfig",
     "LQRTerminalCost",
@@ -86,6 +95,8 @@ __all__ = [
     "MPCSolution",
     "NominalMPC",
     "NominalMPC3DoF",
+    "OSQPRTIConfig",
+    "OSQPRTISolution",
     # Uncertainty
     "PropagatedUncertainty",
     # RTI-MPC

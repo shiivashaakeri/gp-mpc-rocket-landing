@@ -29,6 +29,14 @@ from .exact_gp import (
     GPPrediction,
     MultiOutputExactGP,
 )
+from .fast_gp import (
+    CachedGPPredictor,
+    FastGPConfig,
+    FastGPPredictor,
+    NumbaGPPredictor,
+    SparseGPPredictor,
+    create_fast_gp,
+)
 from .features import (
     AtmosphereModel,
     CombinedFeatureExtractor,
@@ -77,10 +85,14 @@ __all__ = [
     "RBF",
     "SE_ARD",
     "AtmosphereModel",
+    "CachedGPPredictor",
     "CombinedFeatureExtractor",
     "DataBuffer",
     # Exact GP
     "ExactGP",
+    # Fast GP
+    "FastGPConfig",
+    "FastGPPredictor",
     "GPPrediction",
     # Kernels
     "Kernel",
@@ -88,6 +100,7 @@ __all__ = [
     "Matern52",
     "MultiOutputExactGP",
     "MultiOutputSparseGP",
+    "NumbaGPPredictor",
     "OnlineGPUpdater",
     "OnlineStructuredGPUpdater",
     # Online Update
@@ -99,6 +112,7 @@ __all__ = [
     "Simple3DoFGP",
     # Sparse GP
     "SparseGP",
+    "SparseGPPredictor",
     "SquaredExponential",
     "SquaredExponentialARD",
     "StructuredGPConfig",
@@ -108,6 +122,7 @@ __all__ = [
     # Feature Extraction
     "TranslationalFeatureExtractor",
     "WhiteNoise",
+    "create_fast_gp",
     "create_matern_kernel",
     "create_se_ard_kernel",
 ]
