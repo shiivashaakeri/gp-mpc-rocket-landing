@@ -1,2 +1,117 @@
-# Placeholder
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
 
+[project]
+name = "gp-mpc-rocket-landing"
+version = "0.1.0"
+description = "Gaussian Process enhanced Model Predictive Control for autonomous rocket landing"
+readme = "README.md"
+license = {file = "LICENSE"}
+requires-python = ">=3.9"
+authors = [
+    {name = "GP-MPC Project Team"}
+]
+keywords = [
+    "model-predictive-control",
+    "gaussian-processes",
+    "rocket-landing",
+    "autonomous-systems",
+    "safe-learning",
+    "control-systems"
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Scientific/Engineering",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+]
+
+dependencies = [
+    "numpy>=1.21.0",
+    "scipy>=1.7.0",
+    "matplotlib>=3.4.0",
+    "pyyaml>=6.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0",
+    "pytest-cov>=4.0",
+    "black>=23.0",
+    "isort>=5.0",
+    "mypy>=1.0",
+    "flake8>=6.0",
+]
+optimization = [
+    "casadi>=3.6.0",
+    "osqp>=0.6.0",
+]
+visualization = [
+    "plotly>=5.0",
+    "jupyter>=1.0",
+    "ipywidgets>=8.0",
+]
+all = [
+    "gp-mpc-rocket-landing[dev,optimization,visualization]",
+]
+
+[project.urls]
+Homepage = "https://github.com/your-org/gp-mpc-rocket-landing"
+Documentation = "https://github.com/your-org/gp-mpc-rocket-landing/docs"
+Repository = "https://github.com/your-org/gp-mpc-rocket-landing"
+Issues = "https://github.com/your-org/gp-mpc-rocket-landing/issues"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["src*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+addopts = "-v --tb=short"
+filterwarnings = [
+    "ignore::DeprecationWarning",
+    "ignore::PendingDeprecationWarning",
+]
+
+[tool.black]
+line-length = 88
+target-version = ["py39", "py310", "py311", "py312"]
+include = '\.pyi?$'
+exclude = '''
+/(
+    \.git
+    | \.venv
+    | venv
+    | __pycache__
+    | build
+    | dist
+)/
+'''
+
+[tool.isort]
+profile = "black"
+line_length = 88
+known_first_party = ["src"]
+skip = [".git", ".venv", "venv", "__pycache__", "build", "dist"]
+
+[tool.mypy]
+python_version = "3.9"
+warn_return_any = true
+warn_unused_configs = true
+ignore_missing_imports = true
+exclude = [
+    "venv",
+    ".venv",
+    "build",
+    "dist",
+]

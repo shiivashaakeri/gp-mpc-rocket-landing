@@ -1,36 +1,52 @@
-# Rocket Vehicle Parameters
-vehicle:
-  name: "Falcon-9-like"
-  
-  # Mass properties
-  mass:
-    dry_mass: 22200.0  # kg
-    propellant_mass: 411000.0  # kg
-    initial_mass: 433200.0  # kg
-  
-  # Inertia tensor (kg*m^2) - principal axes
-  inertia:
-    Ixx: 1.0e6
-    Iyy: 1.0e6
-    Izz: 1.0e5
-  
-  # Engine parameters
-  engine:
-    isp: 282.0  # seconds (sea level)
-    isp_vacuum: 311.0  # seconds
-    max_thrust: 845000.0  # N (single engine)
-    min_thrust: 0.0  # N
-    gimbal_max_angle: 0.1745  # radians (10 degrees)
-    num_engines: 1
-  
-  # Geometry
-  geometry:
-    length: 47.0  # m
-    diameter: 3.7  # m
-    center_of_mass_offset: [0.0, 0.0, -1.0]  # m (from base)
-  
-  # Aerodynamics (simplified)
-  aerodynamics:
-    drag_coefficient: 0.3
-    reference_area: 10.75  # m^2
+# Rocket Parameters Configuration
+# Based on Falcon 9-like vehicle scaled down
 
+# Mass properties
+mass:
+  dry: 1505.0        # Dry mass [kg]
+  wet: 1905.0        # Wet (initial) mass [kg]
+  fuel: 400.0        # Propellant mass [kg]
+
+# Engine parameters
+engine:
+  I_sp: 225.0        # Specific impulse [s]
+  T_min: 880.0       # Minimum thrust [N]
+  T_max: 3000.0      # Maximum thrust [N]
+  delta_max: 20.0    # Maximum gimbal angle [deg]
+  n_engines: 1       # Number of engines
+
+# Geometry
+geometry:
+  r_T_B: [0.0, 0.0, -2.0]    # Thrust point in body frame [m]
+  r_cp_B: [0.0, 0.0, 1.0]    # Center of pressure in body frame [m]
+  length: 5.0                 # Vehicle length [m]
+  diameter: 1.0               # Vehicle diameter [m]
+
+# Inertia (diagonal approximation)
+inertia:
+  J_xx: 4000.0       # Roll moment of inertia [kg⋅m²]
+  J_yy: 4000.0       # Pitch moment of inertia [kg⋅m²]
+  J_zz: 100.0        # Yaw moment of inertia [kg⋅m²]
+
+# Aerodynamics
+aerodynamics:
+  S_ref: 1.0         # Reference area [m²]
+  C_D: 0.5           # Drag coefficient
+  C_L: 0.0           # Lift coefficient (assume axisymmetric)
+
+# Environment
+environment:
+  g: 9.807           # Gravitational acceleration [m/s²]
+  rho_0: 1.225       # Sea-level air density [kg/m³]
+  H_scale: 8500.0    # Scale height [m]
+  # For Mars:
+  # g: 3.71
+  # rho_0: 0.02
+  # H_scale: 11100.0
+
+# Constraints
+constraints:
+  theta_max: 90.0    # Maximum tilt angle [deg]
+  omega_max: 60.0    # Maximum angular velocity [deg/s]
+  gamma_gs: 20.0     # Glideslope angle [deg]
+  v_max: 100.0       # Maximum velocity [m/s]

@@ -1,0 +1,70 @@
+# MPC Parameters Configuration
+
+# Horizon settings
+horizon:
+  N: 30              # Prediction horizon steps
+  dt: 0.1            # Time step [s]
+  tf_free: false     # Free final time optimization
+
+# Cost function weights (6-DoF state: m, r, v, q, omega)
+cost:
+  # Stage cost weights
+  Q:
+    mass: 0.0        # Don't penalize mass directly
+    position: [10.0, 10.0, 10.0]       # [x, y, z]
+    velocity: [1.0, 1.0, 1.0]          # [vx, vy, vz]
+    quaternion: [0.0, 10.0, 10.0, 0.0] # [qw, qx, qy, qz] - penalize tilt
+    angular_velocity: [1.0, 1.0, 1.0]  # [wx, wy, wz]
+  
+  # Control cost weights
+  R:
+    thrust: [0.001, 0.001, 0.001]  # [Tx, Ty, Tz]
+  
+  # Control rate cost (for smooth control)
+  R_rate:
+    thrust: [0.01, 0.01, 0.01]
+  
+  # Terminal cost multiplier
+  terminal_multiplier: 10.0
+
+# Solver settings
+solver:
+  type: ipopt        # 'ipopt', 'osqp', 'qpoases'
+  max_iter: 100
+  tol: 1.0e-6
+  warm_start: true
+  verbose: false
+  
+  # IPOPT specific
+  ipopt:
+    linear_solver: mumps
+    print_level: 0
+    max_cpu_time: 1.0
+  
+  # OSQP specific (for RTI)
+  osqp:
+    eps_abs: 1.0e-4
+    eps_rel: 1.0e-4
+    max_iter: 1000
+
+# Real-Time Iteration settings
+rti:
+  enabled: true
+  max_qp_iter: 1     # Single QP iteration per timestep
+  feedback_delay: 1   # Steps of delay in feedback
+
+# Reference trajectory
+reference:
+  type: scvx         # 'scvx', 'straight_line', 'polynomial'
+  update_frequency: 1.0  # How often to recompute [s]
+
+# Constraint handling
+constraints:
+  soft_constraints: true
+  slack_penalty: 1000.0
+  
+  # Constraint tightening for robustness
+  tightening:
+    enabled: true
+    method: chance_constraint  # 'chance_constraint', 'fixed'
+    probability: 0.95          # Satisfaction probability

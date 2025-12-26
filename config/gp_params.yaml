@@ -1,0 +1,106 @@
+# Gaussian Process Parameters Configuration
+
+# GP model structure
+model:
+  type: structured    # 'structured' (physics-informed) or 'full'
+  
+  # For structured GP: separate GPs for translational and rotational
+  outputs:
+    translational: 3  # d_v residuals
+    rotational: 3     # d_omega residuals
+  
+  # Kernel type
+  kernel: se_ard      # 'se' (squared exponential), 'se_ard', 'matern32', 'matern52'
+
+# Sparse GP settings
+sparse:
+  enabled: true
+  n_inducing: 50      # Number of inducing points
+  inducing_method: kmeans  # 'kmeans', 'random', 'greedy'
+  
+# Feature extraction (inputs to GP)
+features:
+  translational:
+    - velocity_body    # v_B (3)
+    - dynamic_pressure # q_dyn (1)
+    - angle_of_attack  # alpha (1)
+    - sideslip_angle   # beta (1)
+    - thrust_body      # T_B (3)
+    - altitude         # h (1)
+    # Total: 10 features
+    
+  rotational:
+    - angular_velocity  # omega_B (3)
+    - thrust_body       # T_B (3)
+    - dynamic_pressure  # q_dyn (1)
+    # Total: 7 features
+
+# Hyperparameters (initial values, will be optimized)
+hyperparameters:
+  # Lengthscales (one per input dimension for ARD)
+  lengthscales:
+    translational: [10.0, 10.0, 10.0, 100.0, 0.5, 0.5, 100.0, 100.0, 100.0, 50.0]
+    rotational: [1.0, 1.0, 1.0, 100.0, 100.0, 100.0, 100.0]
+  
+  # Output variance
+  signal_variance:
+    translational: 1.0
+    rotational: 0.1
+  
+  # Noise variance
+  noise_variance:
+    translational: 0.01
+    rotational: 0.001
+
+# Training settings
+training:
+  optimizer: adam     # 'adam', 'lbfgs'
+  learning_rate: 0.1
+  max_iter: 100
+  
+  # Marginal likelihood optimization
+  mll_method: exact   # 'exact', 'variational'
+
+# Online learning
+online:
+  enabled: true
+  
+  # Data collection
+  buffer_size: 1000   # Maximum data points to store
+  
+  # Novelty criterion for adding data
+  novelty:
+    method: uncertainty  # 'uncertainty', 'distance', 'hybrid'
+    threshold: 0.5       # Add if sigma > threshold * sigma_prior
+  
+  # Update frequency
+  update_interval: 10   # Steps between GP updates
+  
+  # Hyperparameter retraining
+  retrain_interval: 100  # Steps between hyperparameter optimization
+  retrain_after_landing: true
+
+# Uncertainty quantification
+uncertainty:
+  # RKHS bound parameter
+  beta_method: theoretical  # 'theoretical', 'calibrated', 'fixed'
+  beta_fixed: 2.0           # Used if method is 'fixed'
+  delta: 0.05               # Probability of bound violation
+  
+  # For constraint tightening
+  confidence_level: 0.95
+
+# Data preprocessing
+preprocessing:
+  normalize_inputs: true
+  normalize_outputs: true
+  
+  # Outlier removal
+  outlier_removal: true
+  outlier_threshold: 3.0  # Standard deviations
+
+# Saving/Loading
+io:
+  save_path: data/gp_models/
+  auto_save: true
+  save_interval: 50  # Save every N updates
