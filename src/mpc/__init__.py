@@ -22,7 +22,6 @@ Usage:
 """
 
 from .constraints import (
-    CasADiConstraints,
     ConstraintParams,
     TightenedConstraints,
     check_all_constraints,
@@ -34,7 +33,6 @@ from .constraints import (
     eval_tilt_angle,
 )
 from .cost_functions import (
-    CasADiCostFunction,
     CostWeights,
     LQRTerminalCost,
     TrajectoryObjective,
@@ -44,6 +42,15 @@ from .cost_functions import (
     quadratic_stage_cost,
     tracking_cost,
 )
+
+# Check for CasADi
+try:
+    from .constraints import CasADiConstraints  # noqa: F401
+    from .cost_functions import CasADiCostFunction  # noqa: F401
+
+    HAS_CASADI = True
+except ImportError:
+    HAS_CASADI = False
 from .gp_mpc import (
     GPMPC,
     GPMPCConfig,
@@ -78,8 +85,6 @@ __all__ = [
     "GPMPC",
     "OSQPRTIMPC",
     "RTI_MPC",
-    "CasADiConstraints",
-    "CasADiCostFunction",
     # Constraints
     "ConstraintParams",
     "ConstraintTightening",
@@ -121,3 +126,7 @@ __all__ = [
     "quadratic_stage_cost",
     "tracking_cost",
 ]
+
+# Add CasADi classes if available
+if HAS_CASADI:
+    __all__.extend(["CasADiConstraints", "CasADiCostFunction"])
