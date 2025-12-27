@@ -1,3 +1,24 @@
-# Placeholder
+# Python bytecode
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
 
+# Virtual environments
 venv/
+.venv/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+
+# Build artifacts
+build/
+dist/
+*.egg-info/
+
+# pytest
+.pytest_cache/
+.coverage
+htmlcov/
