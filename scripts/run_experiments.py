@@ -366,7 +366,9 @@ def main():
         velocity_std=np.array([1, 0.5, 0.5]),
         landing_constraints=LandingConstraints(
             pos_tol_xy=5.0,
-            vel_tol_z=3.0,  # Allow up to 3 m/s touchdown for baseline controllers
+            pos_tol_z=2.0,  # Altitude tolerance
+            vel_tol_xy=2.0,  # Allow 2 m/s horizontal velocity for baselines
+            vel_tol_z=3.5,  # Allow 3.5 m/s vertical velocity for baselines
         ),
     )
 

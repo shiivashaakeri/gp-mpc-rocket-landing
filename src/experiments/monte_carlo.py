@@ -493,10 +493,14 @@ class MonteCarloSimulator:
                     sol = self.controller.step(x)
                     u = sol.u0
                 elif hasattr(self.controller, "solve"):
-                    # Update target each step with current mass and incremental descent
+                    # Update target each step: gradual descent with gentle horizontal correction
                     x_target = x.copy()
-                    x_target[4:7] = 0  # Zero velocity target
-                    x_target[1] = max(0.5, altitude - 2.0)  # Target 2m lower, min 0.5m
+                    x_target[1] = max(0.0, altitude - 2.0)  # Target 2m lower altitude
+                    # Gradually steer toward origin (blend current pos with origin)
+                    blend = min(1.0, 0.3 + 0.7 * (1 - altitude / 30.0))  # More aggressive as we descend
+                    x_target[2] = x[2] * (1 - blend)  # Steer y toward 0
+                    x_target[3] = x[3] * (1 - blend)  # Steer z toward 0
+                    x_target[4:7] = 0.0  # Zero velocity target
                     sol = self.controller.solve(x, x_target)
                     if sol is None:
                         outcome = LandingOutcome.DIVERGENCE
