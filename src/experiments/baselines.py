@@ -113,15 +113,16 @@ class LQRController:
             self.K = np.linalg.inv(R + B.T @ P @ B) @ B.T @ P @ A
         except Exception:
             # Fallback to simple hand-tuned gains
+            # Coordinate system: x (state[1]) = altitude, vx (state[4]) = vertical velocity
             self.K = np.zeros((self.n_u, self.n_x))
-            # Altitude control: thrust responds to altitude error and velocity
-            self.K[0, 3] = -0.5  # Negative altitude error -> more thrust
-            self.K[0, 6] = -1.0  # Negative vertical velocity -> more thrust
-            # Horizontal control via gimbal
-            self.K[1, 2] = 0.1  # y position -> gimbal_x
-            self.K[1, 5] = 0.2  # vy -> gimbal_x
-            self.K[2, 1] = 0.1  # x position -> gimbal_y
-            self.K[2, 4] = 0.2  # vx -> gimbal_y
+            # Altitude control: thrust responds to altitude error and vertical velocity
+            self.K[0, 1] = -1.0  # Negative altitude error -> more thrust
+            self.K[0, 4] = -2.0  # Negative vertical velocity -> more thrust
+            # Horizontal control via thrust direction (not gimbal in this dynamics)
+            self.K[1, 2] = 0.2  # y position error -> thrust_y
+            self.K[1, 5] = 0.5  # vy -> thrust_y
+            self.K[2, 3] = 0.2  # z position error -> thrust_z
+            self.K[2, 6] = 0.5  # vz -> thrust_z
 
         self._initialized = True
 
@@ -296,13 +297,21 @@ class PIDController:
         self.prev_error = np.zeros(3)
 
     def solve(self, x: NDArray, x_target: Optional[NDArray] = None) -> PIDSolution:
-        """Compute PID control."""
+        """Compute PID control.
+
+        Note:
+            Coordinate system: gravity is in -x direction, so:
+            - pos[0] (x) = altitude (vertical position)
+            - pos[1], pos[2] (y, z) = horizontal position
+            - vel[0] (vx) = vertical velocity
+            - vel[1], vel[2] (vy, vz) = horizontal velocity
+        """
         target = x_target if x_target is not None else self.x_target
         cfg = self.config
 
-        # Position and velocity errors
-        pos = x[1:4]  # x, y, z
-        vel = x[4:7]  # vx, vy, vz
+        # Position and velocity
+        pos = x[1:4]  # [altitude, y, z]
+        vel = x[4:7]  # [v_vert, v_y, v_z]
 
         pos_target = target[1:4]
         vel_target = target[4:7]
@@ -317,26 +326,29 @@ class PIDController:
         # Derivative (using velocity error)
         error_derivative = vel_error
 
-        # Altitude control (z-axis)
-        thrust_z = cfg.Kp_z * pos_error[2] + cfg.Ki_z * self.integral_error[2] + cfg.Kd_z * error_derivative[2]
+        # Altitude control (x-axis, since gravity is in -x)
+        # pos_error[0] = altitude error, error_derivative[0] = vertical velocity error
+        thrust_vert = cfg.Kp_z * pos_error[0] + cfg.Ki_z * self.integral_error[0] + cfg.Kd_z * error_derivative[0]
 
         # Add gravity compensation
         mass = x[0]
-        thrust = mass * (self.g + thrust_z)
-        thrust = np.clip(thrust, cfg.thrust_min, cfg.thrust_max)
+        thrust_x = mass * (self.g + thrust_vert)
+        thrust_x = np.clip(thrust_x, cfg.thrust_min, cfg.thrust_max)
 
-        # Horizontal control (converted to gimbal angles)
-        accel_x = cfg.Kp_xy * pos_error[0] + cfg.Ki_xy * self.integral_error[0] + cfg.Kd_xy * error_derivative[0]
-        accel_y = cfg.Kp_xy * pos_error[1] + cfg.Ki_xy * self.integral_error[1] + cfg.Kd_xy * error_derivative[1]
+        # Horizontal control (y and z axes) - direct thrust components
+        # pos_error[1] = y error, pos_error[2] = z error
+        thrust_y = cfg.Kp_xy * pos_error[1] + cfg.Ki_xy * self.integral_error[1] + cfg.Kd_xy * error_derivative[1]
+        thrust_z = cfg.Kp_xy * pos_error[2] + cfg.Ki_xy * self.integral_error[2] + cfg.Kd_xy * error_derivative[2]
 
-        # Convert to gimbal (small angle approximation)
-        gimbal_x = -accel_y * mass / thrust  # Cross-axis
-        gimbal_y = accel_x * mass / thrust
+        # Scale horizontal thrust by mass
+        thrust_y = thrust_y * mass
+        thrust_z = thrust_z * mass
 
-        gimbal_x = np.clip(gimbal_x, -cfg.gimbal_max, cfg.gimbal_max)
-        gimbal_y = np.clip(gimbal_y, -cfg.gimbal_max, cfg.gimbal_max)
+        # Clip horizontal thrust components
+        thrust_y = np.clip(thrust_y, -cfg.thrust_max * 0.3, cfg.thrust_max * 0.3)
+        thrust_z = np.clip(thrust_z, -cfg.thrust_max * 0.3, cfg.thrust_max * 0.3)
 
-        u = np.array([thrust, gimbal_x, gimbal_y])
+        u = np.array([thrust_x, thrust_y, thrust_z])
 
         self.prev_error = pos_error.copy()
 

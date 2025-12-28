@@ -25,7 +25,7 @@ from typing import Optional, Tuple
 import numpy as np
 from numpy.typing import NDArray
 
-from terminal.safe_set import SampledSafeSet
+from src.terminal.safe_set import SampledSafeSet
 
 try:
     import casadi as ca

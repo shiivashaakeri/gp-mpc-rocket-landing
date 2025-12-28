@@ -39,9 +39,9 @@ try:
 except ImportError:
     HAS_CASADI = False
 
-from terminal.convex_hull import TerminalSetManager
-from terminal.q_function import QFunctionConfig, QFunctionManager
-from terminal.safe_set import FuelAwareSafeSet, SampledSafeSet
+from src.terminal.convex_hull import TerminalSetManager
+from src.terminal.q_function import QFunctionConfig, QFunctionManager
+from src.terminal.safe_set import FuelAwareSafeSet, SampledSafeSet
 
 
 @dataclass

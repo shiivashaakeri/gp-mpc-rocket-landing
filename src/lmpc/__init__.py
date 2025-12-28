@@ -28,7 +28,7 @@ Reference:
 """
 
 # Re-export terminal components for convenience
-from terminal import (
+from src.terminal import (
     ConvexHullConfig,
     ConvexHullConstraint,
     FuelAwareSafeSet,

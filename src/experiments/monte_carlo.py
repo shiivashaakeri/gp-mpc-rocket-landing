@@ -60,29 +60,41 @@ class LandingConstraints:
         Check if landing is successful.
 
         Args:
-            state: Final state [m, x, y, z, vx, vy, vz, ...]
+            state: Final state [m, r_x, r_y, r_z, v_x, v_y, v_z, ...]
             initial_mass: Initial propellant mass
 
         Returns:
             success: Whether landing met all criteria
             reason: Explanation
+
+        Note:
+            Coordinate system: gravity is in -x direction, so:
+            - x (state[1]) = altitude (vertical position)
+            - y, z (state[2], state[3]) = horizontal position
+            - vx (state[4]) = vertical velocity
+            - vy, vz (state[5], state[6]) = horizontal velocity
         """
-        m, x, y, z = state[0], state[1], state[2], state[3]
-        vx, vy, vz = state[4], state[5], state[6]
+        m = state[0]
+        altitude = state[1]  # x is altitude (gravity in -x)
+        y, z = state[2], state[3]  # horizontal position
+        v_vert = state[4]  # vx is vertical velocity
+        v_horiz_y, v_horiz_z = state[5], state[6]
 
-        # Check position
-        if abs(x) > self.pos_tol_xy or abs(y) > self.pos_tol_xy:
-            return False, f"Position error: ({x:.2f}, {y:.2f}) m"
+        # Check altitude (should be near zero for landing)
+        if abs(altitude) > self.pos_tol_z:
+            return False, f"Altitude error: {altitude:.2f} m"
 
-        if abs(z) > self.pos_tol_z:
-            return False, f"Altitude error: {z:.2f} m"
+        # Check horizontal position
+        if abs(y) > self.pos_tol_xy or abs(z) > self.pos_tol_xy:
+            return False, f"Horizontal position error: ({y:.2f}, {z:.2f}) m"
 
-        # Check velocity
-        if abs(vx) > self.vel_tol_xy or abs(vy) > self.vel_tol_xy:
-            return False, f"Horizontal velocity: ({vx:.2f}, {vy:.2f}) m/s"
+        # Check vertical velocity
+        if abs(v_vert) > self.vel_tol_z:
+            return False, f"Vertical velocity: {v_vert:.2f} m/s"
 
-        if abs(vz) > self.vel_tol_z:
-            return False, f"Vertical velocity: {vz:.2f} m/s"
+        # Check horizontal velocity
+        if abs(v_horiz_y) > self.vel_tol_xy or abs(v_horiz_z) > self.vel_tol_xy:
+            return False, f"Horizontal velocity: ({v_horiz_y:.2f}, {v_horiz_z:.2f}) m/s"
 
         # Check fuel
         fuel_used_frac = 1.0 - m / initial_mass
@@ -354,7 +366,15 @@ class MonteCarloSimulator:
         self.n_u = getattr(dynamics, "n_u", 3)
 
     def sample_initial_condition(self, seed: Optional[int] = None) -> NDArray:
-        """Sample random initial condition."""
+        """Sample random initial condition.
+
+        Note:
+            Coordinate system: gravity is in -x direction, so:
+            - state[1] = r_x = altitude (vertical position)
+            - state[2], state[3] = r_y, r_z = horizontal position
+            - state[4] = v_x = vertical velocity (negative = descending)
+            - state[5], state[6] = v_y, v_z = horizontal velocity
+        """
         if seed is not None:
             np.random.seed(seed)
 
@@ -364,19 +384,19 @@ class MonteCarloSimulator:
         m = cfg.mass_mean + np.random.randn() * cfg.mass_std
         m = np.clip(m, 1.5, 2.5)
 
-        # Position
-        z = cfg.altitude_mean + np.random.randn() * cfg.altitude_std
-        z = np.clip(z, 100, 1000)
-        x = np.random.randn() * cfg.horizontal_std
-        y = np.random.randn() * cfg.horizontal_std
+        # Position: x is altitude (vertical), y and z are horizontal
+        altitude = cfg.altitude_mean + np.random.randn() * cfg.altitude_std
+        altitude = np.clip(altitude, 10, 100)  # Reasonable altitude range
+        horiz_y = np.random.randn() * cfg.horizontal_std
+        horiz_z = np.random.randn() * cfg.horizontal_std
 
-        # Velocity
-        vx = cfg.velocity_mean[0] + np.random.randn() * cfg.velocity_std[0]
-        vy = cfg.velocity_mean[1] + np.random.randn() * cfg.velocity_std[1]
-        vz = cfg.velocity_mean[2] + np.random.randn() * cfg.velocity_std[2]
-        vz = min(vz, -10)  # Ensure descending
+        # Velocity: vx is vertical velocity (negative = descending), vy/vz are horizontal
+        v_vert = cfg.velocity_mean[0] + np.random.randn() * cfg.velocity_std[0]
+        v_vert = min(v_vert, -1)  # Ensure descending
+        v_horiz_y = cfg.velocity_mean[1] + np.random.randn() * cfg.velocity_std[1]
+        v_horiz_z = cfg.velocity_mean[2] + np.random.randn() * cfg.velocity_std[2]
 
-        return np.array([m, x, y, z, vx, vy, vz])
+        return np.array([m, altitude, horiz_y, horiz_z, v_vert, v_horiz_y, v_horiz_z])
 
     def run_single(  # noqa: C901, PLR0912, PLR0915
         self,
@@ -403,9 +423,10 @@ class MonteCarloSimulator:
 
         initial_mass = x0[0]
 
-        # Target state (landed at origin)
+        # Target state will be updated each step to use current mass
+        # (setting different target mass causes MPC solver issues)
         x_target = np.zeros(self.n_x)
-        x_target[0] = initial_mass * 0.7  # Expected final mass
+        x_target[0] = initial_mass  # Start with initial mass, update per-step
 
         # Initialize controller
         if hasattr(self.controller, "initialize"):
@@ -435,14 +456,16 @@ class MonteCarloSimulator:
             # Check for termination conditions
 
             # Crashed (negative altitude)
-            if x[3] < 0:
+            # Note: altitude is x[1] (r_x) since gravity is in -x direction
+            altitude = x[1]
+            if altitude < 0:
                 outcome = LandingOutcome.CRASH
-                failure_reason = f"Crashed at altitude {x[3]:.2f}m"
+                failure_reason = f"Crashed at altitude {altitude:.2f}m"
                 break
 
             # Fuel exhausted
-            dry_mass = 0.5  # Estimate
-            if x[0] <= dry_mass:
+            dry_mass = 1.0  # Normalized rocket dry mass
+            if x[0] <= dry_mass + 0.01:
                 outcome = LandingOutcome.FUEL_EXHAUSTED
                 failure_reason = f"Fuel exhausted: mass={x[0]:.3f}"
                 break
@@ -454,7 +477,9 @@ class MonteCarloSimulator:
                 break
 
             # Landed (low altitude and velocity)
-            if x[3] < 1.0 and abs(x[6]) < 5.0:
+            # Note: velocity is x[4] (v_x) since gravity is in -x direction
+            velocity = x[4]
+            if altitude < 1.0 and abs(velocity) < 5.0:
                 # Check landing success
                 success, reason = cfg.landing_constraints.check_landing(x, initial_mass)
                 if not success:
@@ -468,7 +493,20 @@ class MonteCarloSimulator:
                     sol = self.controller.step(x)
                     u = sol.u0
                 elif hasattr(self.controller, "solve"):
+                    # Update target each step with current mass and incremental descent
+                    x_target = x.copy()
+                    x_target[4:7] = 0  # Zero velocity target
+                    x_target[1] = max(0.5, altitude - 2.0)  # Target 2m lower, min 0.5m
                     sol = self.controller.solve(x, x_target)
+                    if sol is None:
+                        outcome = LandingOutcome.DIVERGENCE
+                        failure_reason = "Controller returned None"
+                        break
+                    # Check success attribute only if it exists (MPC has it, LQR/PID don't)
+                    if hasattr(sol, "success") and not sol.success:
+                        outcome = LandingOutcome.DIVERGENCE
+                        failure_reason = "MPC solve failed"
+                        break
                     u = sol.u0
                 else:
                     u = np.zeros(self.n_u)
