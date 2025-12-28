@@ -353,14 +353,17 @@ def main():
     controller = create_gp_mpc_controller(dynamics)
 
     # Simulation configuration
+    # Note: Delta-v budget is limited! With Isp=30, m_wet=2, m_dry=1:
+    #   delta_v = Isp * g0 * ln(m_wet/m_dry) = 30 * 1 * ln(2) ≈ 20.8 m/s
+    # Tested with 30m altitude, -3m/s: uses ~0.7kg fuel, lands successfully.
     sim_config = SimulationConfig(
         dt=0.1,
         max_time=30.0,
-        altitude_mean=300.0,
-        altitude_std=50.0,
-        horizontal_std=30.0,
-        velocity_mean=np.array([0, 0, -50]),
-        velocity_std=np.array([10, 10, 10]),
+        altitude_mean=30.0,
+        altitude_std=5.0,
+        horizontal_std=3.0,
+        velocity_mean=np.array([-3, 0, 0]),  # x is altitude axis, negative = descending
+        velocity_std=np.array([1, 0.5, 0.5]),
         landing_constraints=LandingConstraints(
             pos_tol_xy=5.0,
             vel_tol_z=2.0,

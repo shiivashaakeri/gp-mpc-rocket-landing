@@ -605,16 +605,16 @@ class NominalMPC3DoF:
             self._opti.subject_to(self._X[:, k + 1] == x_next)
 
         # Constraints
-        T_min, T_max = 0.5, 5.0
+        T_min, T_max = 0.0, 5.0  # Allow zero thrust for more flexibility
         for k in range(N):
             T_sq = ca.dot(self._U[:, k], self._U[:, k])
-            self._opti.subject_to(T_sq >= T_min**2)
             self._opti.subject_to(T_sq <= T_max**2)
 
-            # Glideslope
-            r_k = self._X[1:4, k]
-            gamma = np.deg2rad(30)
-            self._opti.subject_to(r_k[0] ** 2 * np.tan(gamma) ** 2 >= r_k[1] ** 2 + r_k[2] ** 2)
+            # Glideslope constraint (optional, can help with trajectory shaping)
+            # Disabled by default as it can cause infeasibility near landing
+            # r_k = self._X[1:4, k]
+            # gamma = np.deg2rad(30)
+            # self._opti.subject_to(r_k[0] ** 2 * np.tan(gamma) ** 2 >= r_k[1] ** 2 + r_k[2] ** 2)
 
         # Cost
         Q = np.diag([0, 10, 10, 10, 1, 1, 1])
@@ -652,7 +652,8 @@ class NominalMPC3DoF:
         self._opti.set_initial(self._X, X_init.T)
 
         U_init = np.zeros((self.config.N, self.n_u))
-        U_init[:, 2] = x0[0] * self.dynamics.params.g0
+        # Initial guess: hover thrust in x-direction (opposing gravity which is in -x)
+        U_init[:, 0] = x0[0] * self.dynamics.params.g0
         self._opti.set_initial(self._U, U_init.T)
 
         start = time.perf_counter()
