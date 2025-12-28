@@ -498,9 +498,14 @@ class MonteCarloSimulator:
                     x_target[4:7] = 0  # Zero velocity target
                     x_target[1] = max(0.5, altitude - 2.0)  # Target 2m lower, min 0.5m
                     sol = self.controller.solve(x, x_target)
-                    if sol is None or not sol.success:
+                    if sol is None:
                         outcome = LandingOutcome.DIVERGENCE
-                        failure_reason = f"MPC solve failed"
+                        failure_reason = "Controller returned None"
+                        break
+                    # Check success attribute only if it exists (MPC has it, LQR/PID don't)
+                    if hasattr(sol, "success") and not sol.success:
+                        outcome = LandingOutcome.DIVERGENCE
+                        failure_reason = "MPC solve failed"
                         break
                     u = sol.u0
                 else:
