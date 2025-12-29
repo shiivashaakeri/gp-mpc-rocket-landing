@@ -118,11 +118,11 @@ class LQRController:
             # Altitude control: thrust responds to altitude error and vertical velocity
             self.K[0, 1] = -1.0  # Negative altitude error -> more thrust
             self.K[0, 4] = -2.0  # Negative vertical velocity -> more thrust
-            # Horizontal control via thrust direction (not gimbal in this dynamics)
-            self.K[1, 2] = 0.2  # y position error -> thrust_y
-            self.K[1, 5] = 0.5  # vy -> thrust_y
-            self.K[2, 3] = 0.2  # z position error -> thrust_z
-            self.K[2, 6] = 0.5  # vz -> thrust_z
+            # Horizontal control - aggressive gains to steer toward origin
+            self.K[1, 2] = 0.5  # y position error -> thrust_y
+            self.K[1, 5] = 1.0  # vy -> thrust_y
+            self.K[2, 3] = 0.5  # z position error -> thrust_z
+            self.K[2, 6] = 1.0  # vz -> thrust_z
 
         self._initialized = True
 
@@ -232,10 +232,10 @@ class PIDConfig:
     Ki_z: float = 0.1
     Kd_z: float = 1.5
 
-    # Horizontal position gains
-    Kp_xy: float = 0.5
-    Ki_xy: float = 0.01
-    Kd_xy: float = 0.3
+    # Horizontal position gains - aggressive to steer toward origin
+    Kp_xy: float = 1.0
+    Ki_xy: float = 0.05
+    Kd_xy: float = 0.8
 
     # Integral limits
     max_integral: float = 10.0

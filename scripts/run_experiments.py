@@ -151,6 +151,63 @@ def run_baseline_comparison(
     return results
 
 
+def run_disturbed_comparison(
+    dynamics,
+    main_controller,
+    n_runs: int,
+    config: SimulationConfig,
+) -> dict:
+    """Run controller comparison under disturbances."""
+    print(f"\n{'=' * 60}")
+    print("Running Disturbed Comparison (with disturbances)")
+    print(f"{'=' * 60}")
+
+    # Create config with disturbances
+    disturbed_config = SimulationConfig(
+        dt=config.dt,
+        max_time=config.max_time,
+        altitude_mean=config.altitude_mean,
+        altitude_std=config.altitude_std,
+        horizontal_std=config.horizontal_std,
+        velocity_mean=config.velocity_mean,
+        velocity_std=config.velocity_std,
+        mass_mean=config.mass_mean,
+        mass_std=config.mass_std,
+        landing_constraints=config.landing_constraints,
+        # Add significant disturbances
+        thrust_dispersion=0.15,  # 15% thrust uncertainty
+        aero_dispersion=0.3,  # Significant aerodynamic disturbances
+    )
+
+    # Create baseline controllers
+    baselines = create_baseline_controllers(dynamics)
+
+    # Add main controller
+    controllers = {"GP-MPC": main_controller, **baselines}
+
+    # Run comparison
+    results = compare_controllers(
+        dynamics,
+        controllers,
+        n_runs=n_runs,
+        config=disturbed_config,
+        seed=123,  # Different seed from nominal
+    )
+
+    # Print comparison
+    print("\n" + "-" * 60)
+    print(f"{'Controller':<15} {'Success%':>10} {'Fuel (kg)':>12}")
+    print("-" * 60)
+
+    for name, mc_results in results.items():
+        stats = mc_results.get_statistics()
+        sr = stats["success_rate"] * 100
+        fuel = stats.get("fuel_mean", 0)
+        print(f"{name:<15} {sr:>9.1f}% {fuel:>11.3f}")
+
+    return results
+
+
 def run_dispersion_analysis(
     dynamics,
     controller,
@@ -375,15 +432,20 @@ def main():
     # 1. Main Monte Carlo
     mc_results = run_monte_carlo(dynamics, controller, n_runs, sim_config, "GP-MPC")
 
-    # 2. Baseline comparison
+    # 2. Baseline comparison (nominal)
     baseline_results = run_baseline_comparison(dynamics, controller, max(n_runs // 2, 5), sim_config)
 
-    # 3. Dispersion analysis
+    # 3. Baseline comparison (with disturbances)
+    disturbed_results = {}
+    if not args.skip_dispersion:
+        disturbed_results = run_disturbed_comparison(dynamics, controller, max(n_runs // 2, 5), sim_config)
+
+    # 4. Dispersion analysis (GP-MPC only, multiple levels)
     dispersion_results = {}
     if not args.skip_dispersion:
         dispersion_results = run_dispersion_analysis(dynamics, controller, max(n_runs // 4, 5), sim_config)
 
-    # 4. Generate figures
+    # 5. Generate figures
     if not args.skip_figures:
         generate_figures(mc_results, baseline_results, dispersion_results, dirs["figures"])
 
